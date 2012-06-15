@@ -1,25 +1,35 @@
 /*
- * Beershift Webservices with Resteasy for Jboss
+ * Gardenshift Webservices with Resteasy for Jboss
  * 
  * 
  * Author					Comment														Modified
  * 
- * Hilay Khatri				Add new user with email/username validation					05-31-2012
- 
+ * Hilay Khatri				Add new user with email/username validation					06-11-2012
+ * 	
+ * Hilay Khatri				Insert user details in mongoDB								06-11-2012
+ * 
+ * Hilay Khatri				Show all users personal information							06-11-2012
+ * 
+ * Hilay Khatri				Show information of a particular user						06-11-2012
+ * 
+ * Hilay Khatri				Update personal records 									06-11-2012
+ * 
+ * Hilay Khatri				Authenticate user											06-11-2012
+ *
  */
 
 package mypackage;
-import java.io.IOException;
+
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import javax.servlet.ServletException;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
@@ -38,34 +48,37 @@ import com.mongodb.DBCursor;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
-import java.io.*;
-import java.net.*;
-
 
 @Path("/")
 public class Gardenshift {
 	
 	
-	DB db;
+public DB db;
+public Mongo mongo;
     
     public Gardenshift()
     {
     
-	try {
-	
-	Mongo mongo;
-	mongo = new Mongo("localhost", 27017);
-	db = mongo.getDB("gardenshift");
-	
-	} catch (UnknownHostException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-	} catch (MongoException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-	}
-	
+    
+try {
+
+
+mongo = new Mongo("localhost", 27017);
+db = mongo.getDB("gardenshift");
+
+// db.authenticate("admin", "redhat".toCharArray());
+
+} catch (UnknownHostException e) {
+// TODO Auto-generated catch block
+e.printStackTrace();
+} catch (MongoException e) {
+// TODO Auto-generated catch block
+e.printStackTrace();
 }
+
+    }
+
+
 
 		
     
@@ -81,7 +94,7 @@ public Response adduser(@FormParam("username") String userID, @FormParam("passwo
 	Boolean userExists = false;					// See if username already exists
 	Boolean emailExists = false;				// See if email already exists
 	Boolean validEmail = false;					// See if valid email address
-	Boolean validUsername = false;					// See if valid email address	
+	Boolean validUsername = false;				// See if valid email address	
 	String user, email;							// Stores username and email retrieved from mongoDB for verification
 	
 	String msg = "";							// Error message
@@ -139,8 +152,35 @@ public Response adduser(@FormParam("username") String userID, @FormParam("passwo
 		 document.put("password", encryptPassword(password,"SHA-1","UTF-8"));
 		 document.put("creation_date", new Date().toString());
 		 document.put("email", emailAdd);
+		 document.put("name", "");
+		 document.put("zipcode", ""); //HTML5 Geolocation API can also be used
 		 
-	
+		 BasicDBObject feedback = new BasicDBObject();
+		 feedback.put("from","");
+		 feedback.put("text","");
+		 document.put("feedback", feedback);
+		 
+		 BasicDBObject notification = new BasicDBObject();		 
+		 notification.put("from","");
+		 notification.put("text","");
+		 notification.put("type", "");
+		 document.put("notification", notification);
+		 
+		 BasicDBObject friends = new BasicDBObject();		 
+		 friends.put("friends_username","");
+		 friends.put("status","");
+		 friends.put("friends", friends);
+		 
+		 BasicDBObject user_crops = new BasicDBObject();
+		 user_crops.put("crop_name","");
+		 user_crops.put("crop_expected_quantity","");
+		 user_crops.put("crop_harvest_date", "");
+		 user_crops.put("crop_harvested", "");
+		 user_crops.put( "pictures", "");
+		 user_crops.put("videos","");
+		 user_crops.put("comments","");
+		 document.put("user_crops", user_crops);
+		 
 		 collection.insert(document);
 		 
 		 }
@@ -166,8 +206,8 @@ public Response adduser(@FormParam("username") String userID, @FormParam("passwo
 }
 	
 
-	// TODO Auto-generated method stub
-	/*This method encrypts the password using SHA-1 algorithm and UTF-8 encoding. */
+
+/*This method encrypts the password using SHA-1 algorithm and UTF-8 encoding. */
 private static  String encryptPassword(String plaintext, String algorithm, String encoding) throws Exception {
 	
 	        MessageDigest msgDigest = null;
@@ -188,10 +228,9 @@ private static  String encryptPassword(String plaintext, String algorithm, Strin
 	    }
 
 	 
- @GET
- @Path("/authenticate/{userId}/{password}")	
- @Produces("application/json")
- public Response authenticate(@FormParam("username") String userID, @FormParam("username") String password) {
+@Path("authenticate")	
+@POST
+public Response authenticate(@FormParam("username") String userID, @FormParam("password") String password) {
  	
  /*
   * This method authenticates the user
@@ -202,61 +241,63 @@ private static  String encryptPassword(String plaintext, String algorithm, Strin
  try {
 	 
  
- DBCollection collection = db.getCollection("users");
+	 	 DBCollection collection = db.getCollection("users");
+		
+		 BasicDBObject searchQuery = new BasicDBObject();
+		 searchQuery.put("username", userID);
+		
+		 BasicDBObject keys = new BasicDBObject();
+		 keys.put("password", 1);
+		
+		 
+		 DBCursor cursor = collection.find(searchQuery,keys);
+		 
+		 while (cursor.hasNext()) {
+		
+				 BasicDBObject obj = (BasicDBObject) cursor.next();
+				
+				 String result = obj.getString("password");
+					if(result.equals(encryptPassword(password,"SHA-1","UTF-8")))
+					{
+						msg="true";
+					}
 
- BasicDBObject searchQuery = new BasicDBObject();
- searchQuery.put("username", userID);
-
- BasicDBObject keys = new BasicDBObject();
- keys.put("password", 1);
-
- 
- DBCursor cursor = collection.find(searchQuery,keys);
- 
- while (cursor.hasNext()) {
-// msg += cursor.next();
- BasicDBObject obj = (BasicDBObject) cursor.next();
- String result="";
-result+= obj.getString("password");
-if(result.equals(encryptPassword(password,"SHA-1","UTF-8")))
-{
-	msg="true";
-}
-
- }
-
- } catch (UnknownHostException e) {
- Response.status(500);
- } catch (MongoException e) {
-	Response.status(500);
- } catch (Exception e) {
-	// TODO Auto-generated catch block
-	Response.status(500);
-}
+	 }
+	
+	 } catch (UnknownHostException e) {
+	 Response.status(500);
+	 } catch (MongoException e) {
+		Response.status(500);
+	 } catch (Exception e) {
+		// TODO Auto-generated catch block
+		 Response.status(500);
+	 }
  
 return Response.status(200).entity(msg).build();
 
- }
+}
 
-	 
-	 
-@Path("beer")
+	
+@Path("user_info")
 @POST
-public Response drinkbeer(@FormParam("username") String userID, @FormParam("beerName") String beer, @FormParam("when") String when) {
+public Response insert(@FormParam("username") String userID, @FormParam("name") String name, @FormParam("phone") String phone, @FormParam("address") String address, @FormParam("gender") String gender, @FormParam("dob") String dob) {
 
-/* Takes in userID and the beer as parameter and inserts into
-* MongoDB with the current Time
+/* 
+ * Stores user's personal information in the database
 */
 
 	try {
 	
 	
-	DBCollection collection = db.getCollection("drank");
+	DBCollection collection = db.getCollection("users");
 	BasicDBObject document = new BasicDBObject();
 	
 	document.put("username", userID);
-	document.put("beer", beer);
-	document.put("when", when);
+	document.put("name", name);
+	document.put("address", address); //HTML5 Geolocation API can also be used
+	document.put("gender", gender);
+	document.put("phone", phone);
+	document.put("dob", dob);
 	
 	collection.insert(document);
 	
@@ -272,25 +313,26 @@ public Response drinkbeer(@FormParam("username") String userID, @FormParam("beer
 
 		 
 @GET
-@Path("/firehose")
+@Path("/user_details/{username}")
 @Produces("application/json")
-public Response firehose() {
+public Response showUserDetails(@PathParam("username") String userID) {
 	
 /*
- * 	Displays all beers drank by all user
+ * 	Displays information for a user
  */
 
-	 String msg ="[";
+	 String msg ="";
 
 	 try {
 		 
 	 
-	 DBCollection collection = db.getCollection("drank");
+	 DBCollection collection = db.getCollection("users");
 	 
-	 BasicDBObject sortOrder = new BasicDBObject();	 
-	 sortOrder.put("date", -1);
+	 BasicDBObject searchQuery = new BasicDBObject();
+	 searchQuery.put("username", userID);
+	
 	 
-	 DBCursor cursor = collection.find().limit(50).sort(sortOrder);
+	 DBCursor cursor = collection.find(searchQuery);
 	 
 	 if(cursor.hasNext() == false)
 	 {
@@ -299,72 +341,198 @@ public Response firehose() {
 	 }
 	  
 	 while (cursor.hasNext()) {
-	 msg += cursor.next()+",";
+	 msg += cursor.next();
 	 }
 	
 	 } catch (MongoException e) {
 		 Response.status(500);
 	 }
-	 
-	 msg = msg.substring(0, msg.length() -1);
-	 msg += "]"; 
 	
 	 return Response.status(200).entity(msg).build();
 
 	
-	 }
-
+}
 
 @GET
-@Path("/userbeers/username/{name}")
+@Path("/user_search/{data}")
 @Produces("application/json")
-public Response user_beer(@PathParam("name") String userID)
-{
+public Response searchUser(@PathParam("data") String data) {
 	
-/*  
- * 	Displays all the beers drank by user
+/*
+ * 	Displays information for a user
  */
+
+	 String msg ="";
+
+	 try {
+		 
+	 
+	 DBCollection collection = db.getCollection("users");
+	 
+	 List<BasicDBObject> searchQuery = new ArrayList<BasicDBObject>();
+
+	 searchQuery.add(new BasicDBObject("username", data))  ;
+	 searchQuery.add(new BasicDBObject("email", data));
+	 searchQuery.add(new BasicDBObject("zipcode", data));
+	 searchQuery.add(new BasicDBObject("name", data));
+
+	 BasicDBObject sQuery = new BasicDBObject();
+	 sQuery.put("$or", searchQuery);
+	 
+	 DBCursor cursor = collection.find(sQuery);
+	 
+	 if(cursor.hasNext() == false)
+	 {
+	 msg = "null";
+	 return Response.status(200).entity(msg).build();
+	 }
+	  
+	 while (cursor.hasNext()) {
+	 msg += cursor.next();
+	 }
 	
+	 } catch (MongoException e) {
+		 Response.status(500);
+	 }
 	
+	 return Response.status(200).entity(msg).build();
+
+	
+}
+
+@GET
+@Path("/user_details/all")
+@Produces("application/json")
+public Response showAllUserDetails() {
+	
+/*
+ * 	Displays information of all users
+ */
+
 	 String msg ="[";
 
 	 try {
-	
-	 DBCollection collection = db.getCollection("drank");
+		 
 	 
-	 BasicDBObject sortOrder = new BasicDBObject();	 
-	 sortOrder.put("when", -1);
-	
-	 BasicDBObject searchQuery = new BasicDBObject();	 
-	 searchQuery.put("username", userID);
+	 DBCollection collection = db.getCollection("users");
 	 
-	 DBCursor cursor = collection.find(searchQuery).sort(sortOrder);
+	 DBCursor cursor = collection.find();
 	 
 	 if(cursor.hasNext() == false)
-		 {
-		 msg = "null";
-		 return Response.status(200).entity(msg).build();
-		 }
-		 	
-	 
+	 {
+	 msg = "null";
+	 }
+	  
 	 while (cursor.hasNext()) {
-	 msg += cursor.next()+",";
+	 msg += cursor.next() + ",";
 	 }
 	
-	 } catch (MongoException e) {
-		 Response.status(500);
+	 } catch (Exception e) {	
 	 }
 	 
 	 msg = msg.substring(0, msg.length() -1);
-
 	 msg += "]"; 
 	
 	 return Response.status(200).entity(msg).build();
+
 	
-	 }
+}
+
+@Path("user_info_update")
+@POST
+public Response update(@FormParam("username") String userID, @FormParam("name") String name, @FormParam("phone") String phone, @FormParam("address") String address, @FormParam("gender") String gender, @FormParam("dob") String dob) {
+
+/* 
+ * Stores user's personal information in the database
+*/
+
+	try {
+	
+	
+	DBCollection collection = db.getCollection("users");
+	
+	BasicDBObject userSets = new BasicDBObject(); 
+	
+	BasicDBObject update = new BasicDBObject();
+	
+	update.put("name", name);
+	update.put("zipcode", address);
+	
+	userSets.put("$set", update);
+	 
+	collection.update(new BasicDBObject().append("username", userID), userSets);
+	
+	} catch (MongoException e) {
+		Response.status(500);
+	}
+	
+	return Response.status(200).entity("Inserted").build();
 
 
-	public static boolean isValidEmailAddress(String email) {
+}
+
+
+
+
+//@POST
+//@Path("/upload")
+//@Consumes("multipart/form-data")
+//public Response uploadFile(@MultipartForm FileUploadForm form) {
+//
+//	String fileName = "/home/hilaykhatri/test211.txt";
+//
+//	try {
+//		writeFile(form.getData(), fileName);
+//	} catch (IOException e) {
+//		e.printStackTrace();
+//	}
+//
+//	System.out.println("Done");
+//
+//	return Response.status(200)
+//	    .entity("uploadFile is called, Uploaded file name : " + fileName).build();
+//
+//}
+//
+//// save to somewhere
+//private void writeFile(byte[] content, String filename) throws IOException {
+//
+//
+//
+//	DBCollection collection = db.getCollection("images");
+//
+//	
+//
+//	// create a "photo" namespace
+//	GridFS gfsPhoto = new GridFS(db, "photo");
+//
+//	// get image file from local drive
+//	GridFSInputFile gfsFile = gfsPhoto.createFile(content);
+//
+//	// set a new filename for identify purpose
+//	gfsFile.setFilename("hilay");
+//
+//	// save the image file into mongoDB
+//	gfsFile.save();
+//
+//	// print the result
+//	DBCursor cursor = gfsPhoto.getFileList();
+//	while (cursor.hasNext()) {
+//		System.out.println(cursor.next());
+//	}
+//
+//	// get image file by it's filename
+//	GridFSDBFile imageForOutput = gfsPhoto.findOne("hilay");
+//
+//	// save it into a new image file
+//	imageForOutput.writeTo("/home/hilaykhatri/test1hilay.txt");
+//	
+//	System.out.println("Done");
+//
+//}
+
+
+public static boolean isValidEmailAddress(String email) {
 	   boolean result = true;
 	   try {
 	      InternetAddress emailAddr = new InternetAddress(email);

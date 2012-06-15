@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java32-1.6.0-sun-1.6.0.31">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
@@ -13,5 +13,9 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/mongo-2.6.3.jar"/>
+	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/commons-io-2.3/commons-io-2.3.jar"/>
+	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/commons-fileupload-1.2.2/lib/commons-fileupload-1.2.2.jar"/>
+	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/resteasy-multipart-provider.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

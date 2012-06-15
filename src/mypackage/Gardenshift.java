@@ -315,23 +315,21 @@ public Response insert(@FormParam("username") String userID, @FormParam("name") 
 @GET
 @Path("/user_details/{username}")
 @Produces("application/json")
-public Response showUserDetails(@PathParam("username") String userID) {
+public Response showUserDetails(@PathParam("username") String username) {
 	
 /*
  * 	Displays information for a user
+ * 
  */
 
 	 String msg ="";
 
 	 try {
 		 
-	 
+	 BasicDBObject searchQuery = new BasicDBObject();		
 	 DBCollection collection = db.getCollection("users");
 	 
-	 BasicDBObject searchQuery = new BasicDBObject();
-	 searchQuery.put("username", userID);
-	
-	 
+	 searchQuery.put("username",java.util.regex.Pattern.compile(username)); 
 	 DBCursor cursor = collection.find(searchQuery);
 	 
 	 if(cursor.hasNext() == false)

@@ -20,7 +20,12 @@
 
 package mypackage;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -428,31 +433,6 @@ public class Gardenshift {
 		 * Stores user's personal information in the database
 		 */
 
-//		try {
-//
-//			DBCollection collection = db.getCollection("users");
-//
-//			BasicDBObject userSets = new BasicDBObject();
-//
-//			BasicDBObject update = new BasicDBObject();
-//
-//			update.put("name", name);
-//			update.put("zipcode", zip);
-//			update.put("email", email);
-//		
-//
-//			userSets.put("$set", update);
-//			
-//			System.out.println(userSets);
-//
-//			collection.update(new BasicDBObject().append("username", username),
-//					userSets);
-//
-//		} catch (MongoException e) {
-//			Response.status(500);
-//		}
-//
-//		return Response.status(200).entity("Updated").build();
 		
 		try {
 			DBCollection collection = db.getCollection("users");
@@ -581,9 +561,6 @@ public class Gardenshift {
 			keys.put("zipcode", 1);
 			keys.put("user_crops.crop_name", 1);
 			
-			
-			
-
 			searchQuery.put("user_crops.crop_name",
 					java.util.regex.Pattern.compile(cropname));
 			DBCursor cursor = collection.find(searchQuery, keys);
@@ -783,6 +760,55 @@ public Response dashboard() {
     }
 
 }
+
+
+// Geolocation Based API
+
+
+@GET
+@Path("/search/{zipcode}/{distance}")
+@Produces("application/json")
+public Response search_crop(@PathParam("zipcode") String zipcode, @PathParam("distance") String distance)
+{
+
+/*
+* Displays all the users which are within the given radius
+*/
+
+	String URI = "http://api.geonames.org/findNearbyPostalCodesJSON?";
+			
+      String RESTCall ="";
+      String res ="";
+      String result="";
+
+      try {
+
+
+         RESTCall = URI + "formatted=true" + "&postalcode=" + zipcode +  "&country=US&" + "radius=" + distance + "&username=gardenshift&" +"style=full";
+
+           URL url = new URL(RESTCall);
+
+             URLConnection conn = url.openConnection();
+
+             BufferedReader in = new BufferedReader(new
+             InputStreamReader(conn.getInputStream()));
+            
+             while ((res = in.readLine()) != null) {
+
+             result += res;
+
+      }
+     
+     } catch (IOException e) {
+         // TODO Auto-generated catch block
+     Response.status(500);
+     }
+
+      return Response.status(200).entity(result).build();
+
+      }
+
+
 
 
 

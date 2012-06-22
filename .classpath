@@ -17,5 +17,6 @@
 	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/commons-io-2.3/commons-io-2.3.jar"/>
 	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/commons-fileupload-1.2.2/lib/commons-fileupload-1.2.2.jar"/>
 	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/resteasy-multipart-provider.jar"/>
+	<classpathentry kind="lib" path="/home/hilaykhatri/Downloads/google-gson-2.2.1-release.zip"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

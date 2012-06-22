@@ -21,9 +21,11 @@
 package mypackage;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
@@ -42,10 +44,16 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
+
 //import javax.ws.rs.core.Response;
 
 import sun.misc.BASE64Encoder;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -63,10 +71,10 @@ public class Gardenshift {
 
 		try {
 
-			mongo = new Mongo("localhost", 27017);
+			mongo = new Mongo("127.3.119.1", 27017);
 			db = mongo.getDB("gardenshift");
 
-		//	db.authenticate("admin", "redhat".toCharArray());
+			db.authenticate("admin", "redhat".toCharArray());
 
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -232,7 +240,7 @@ public class Gardenshift {
 		 */
 
 		String msg = "false";
-
+	
 		try {
 
 			DBCollection collection = db.getCollection("users");
@@ -250,6 +258,9 @@ public class Gardenshift {
 				BasicDBObject obj = (BasicDBObject) cursor.next();
 
 				String result = obj.getString("password");
+				
+				System.out.println("function=" + encryptPassword(password, "SHA-1", "UTF-8") + "from database=" + result);
+
 				if (result.equals(encryptPassword(password, "SHA-1", "UTF-8"))) {
 					msg = "true";
 				}
@@ -741,23 +752,29 @@ public Response dashboard() {
      * This method returns the list of all the crops that are in the
      * database
      */
-    String msg = "";
-    try {
+	String msg = "[";
 
+	try {
 
-        DBCollection collection = db.getCollection("crop_details");
+		DBCollection collection = db.getCollection("crop_details");
 
-        DBCursor cursor = collection.find();
-        while (cursor.hasNext()) {
-            msg = msg + cursor.next();
-        }
+		DBCursor cursor = collection.find();
 
+		if (cursor.hasNext() == false) {
+			msg = "null";
+		}
 
-        return Response.status(200).entity(msg).build();
+		while (cursor.hasNext()) {
+			msg += cursor.next() + ",";
+		}
 
-    } catch (Exception e) {
-        return Response.status(503).entity(e).build();
-    }
+	} catch (Exception e) {
+	}
+
+	msg = msg.substring(0, msg.length() - 1);
+	msg += "]";
+
+	return Response.status(200).entity(msg).build();
 
 }
 
@@ -784,18 +801,18 @@ public Response search_crop(@PathParam("zipcode") String zipcode, @PathParam("di
       try {
 
 
-         RESTCall = URI + "formatted=true" + "&postalcode=" + zipcode +  "&country=US&" + "radius=" + distance + "&username=gardenshift&" +"style=full";
-
-           URL url = new URL(RESTCall);
-
-             URLConnection conn = url.openConnection();
-
-             BufferedReader in = new BufferedReader(new
-             InputStreamReader(conn.getInputStream()));
-            
-             while ((res = in.readLine()) != null) {
-
-             result += res;
+    	  	 RESTCall = URI + "formatted=true" + "&postalcode=" + zipcode +  "&country=US&" + "radius=" + distance + "&username=gardenshift&" +"style=full";
+	      
+    	   	 URL url = new URL(RESTCall);
+	
+	         URLConnection conn = url.openConnection();
+	
+	         BufferedReader in = new BufferedReader(new
+	         InputStreamReader(conn.getInputStream()));
+	        
+	         while ((res = in.readLine()) != null) {
+	
+	         result += res;
 
       }
      
@@ -808,8 +825,109 @@ public Response search_crop(@PathParam("zipcode") String zipcode, @PathParam("di
 
       }
 
+@GET
+@Path("/search/{zipcode}/{distance}/{cropname}")
+@Produces("application/json")
+public Response search_user_Crop(@PathParam("zipcode") String zipcode, @PathParam("distance") String distance, @PathParam("cropname") String cropname) throws Exception
+{
+
+/*
+* Displays all the users which are within the given radius
+*/
+
+		  String URI = "http://api.geonames.org/findNearbyPostalCodesJSON?";
+				
+	      String RESTCall ="";
+	      String res ="";
+	      String result="";
+      
+    
+    
+    
+
+         RESTCall = URI + "formatted=true" + "&postalcode=" + zipcode +  "&country=US&" + "radius=" + distance + "&username=gardenshift&" +"style=full";
+
+         URL url = new URL(RESTCall);
+
+         URLConnection conn = url.openConnection();
+
+         BufferedReader in = new BufferedReader(new
+         InputStreamReader(conn.getInputStream()));
+                 
+         
+       
+        
+         while ((res = in.readLine()) != null) {
+
+         result += res;
+
+      }
+         
+     
+         ArrayList<String> zip = new ArrayList();
+       
+         JsonElement json = new JsonParser().parse(result);
+
+         JsonObject obj= json.getAsJsonObject();
+         
+         JsonArray jarray = obj.getAsJsonArray("postalCodes");
+         
+         
+       
+         for( int i=0; i < obj.getAsJsonArray("postalCodes").size(); i++)
+         {
+        	 
+        	 JsonObject jobject = jarray.get(i).getAsJsonObject();
+        	 String result1 = jobject.get("postalCode").getAsString();
+        	 
+        	 zip.add(result1);
+        	 
+        	    
+        	       
+         }
+         
+         
+        String msg = "[";
+         
+        BasicDBObject keys = new BasicDBObject();
+			
+		DBCollection collection = db.getCollection("users");
+		
+		keys.put("username", 1);
+		keys.put("email", 1);
+		keys.put("zipcode", 1);
+		keys.put("user_crops.crop_name", 1);
+		
+		List<BasicDBObject> searchQuery = new ArrayList<BasicDBObject>();
+
+		
+		BasicDBObject filteredZip = new BasicDBObject(); 
+        
+        filteredZip.put("zipcode", new BasicDBObject("$in", zip) );
+         
+        searchQuery.add(new BasicDBObject("user_crops.crop_name",java.util.regex.Pattern.compile(cropname)));
+ 		searchQuery.add(filteredZip);
+ 		
+ 		BasicDBObject sQuery = new BasicDBObject();
+ 		sQuery.put("$and", searchQuery);
+         
+ 		DBCursor cursor =  collection.find(sQuery, keys);
+         
+         if(cursor.hasNext() == false)
+         {
+             return Response.status(200).entity("null").build();
+         }
+         
+         while (cursor.hasNext()) {
+             msg = msg + cursor.next() + ", ";
+         }
+         
+         msg = msg.substring(0, msg.length() - 1);
+ 		 msg += "]";
 
 
+         return Response.status(200).entity(msg).build();
+} 
 
 
 }

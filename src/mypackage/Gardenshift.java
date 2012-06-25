@@ -72,6 +72,7 @@ public class Gardenshift {
 		try {
 
 			mongo = new Mongo("127.3.119.1", 27017);
+		//	mongo = new Mongo("localhost", 27017);
 			db = mongo.getDB("gardenshift");
 
 			db.authenticate("admin", "redhat".toCharArray());
@@ -353,6 +354,43 @@ public class Gardenshift {
 		return Response.status(200).entity(msg).build();
 
 	}
+	
+	@GET
+	@Path("/user_available/{username}")
+	@Produces("application/json")
+	public Response isUserAvailable(@PathParam("username") String username) {
+
+		/*
+		 * Displays information for a user
+		 */
+
+		String msg = "";
+
+		try {
+
+			BasicDBObject searchQuery = new BasicDBObject();
+			DBCollection collection = db.getCollection("users");
+
+			searchQuery.put("username",
+					username);
+			DBCursor cursor = collection.find(searchQuery);
+
+			if (cursor.hasNext() == false) {
+				msg = "null";
+				return Response.status(200).entity(msg).build();
+			}
+
+			while (cursor.hasNext()) {
+				msg += cursor.next();
+			}
+
+		} catch (MongoException e) {
+			Response.status(500);
+		}
+
+		return Response.status(200).entity(msg).build();
+
+	}
 
 	@GET
 	@Path("/user_search/{data}")
@@ -609,6 +647,118 @@ public class Gardenshift {
 		return result;
 	}
 	
+	// Add a crop grown by user
+	@GET
+    @Path("create_usercrop/{username}/{name}/{quantity}/{date}/{comment}")
+    @Produces("application/json")
+    public Response addusercrop(
+            @PathParam("name") String name,
+            @PathParam("username") String username,
+            @PathParam("quantity") String quantity,
+            @PathParam("date") String date,
+            @PathParam("comment") String comment) {
+
+       
+        try {
+            DBCollection collection = db.getCollection("users");
+            
+            BasicDBObject update = new BasicDBObject();
+            update.put("username", username);
+
+           
+            BasicDBObject document = new BasicDBObject();
+            
+                document.put("crop_name", name);
+                document.put("crop_expected_quantity", quantity);
+                document.put("crop_harvest_date",date);
+                document.put("comments",comment);
+                
+                BasicDBObject temp = new BasicDBObject();
+                temp.put("$push", new BasicDBObject("user_crops", document));
+
+                collection.update(update, temp, true, true);
+
+                return Response.status(200).entity("success").build();
+
+            }
+         catch (Exception e) {
+            return Response.status(503).entity("failed").build();
+        }
+    }
+	
+	// Delete a crop grown by user
+	
+	@GET
+	@Path("delete_usercrop/{username}/{crop_name}")
+	@Produces("application/json")
+	public Response delete_usercrop(@PathParam("crop_name") String crop_name, @PathParam("username") String username) {
+	    /*
+	     * This method deletes a particular crop entry
+	     */
+	    try {
+
+	    	DBCollection collection = db.getCollection("users");
+            
+            BasicDBObject update = new BasicDBObject();
+            update.put("username", username);
+
+            // check if the entry is not a duplicate
+            BasicDBObject document = new BasicDBObject();
+            
+                document.put("crop_name", crop_name);              
+                
+                BasicDBObject temp = new BasicDBObject();
+                temp.put("$pull", new BasicDBObject("user_crops", document));
+
+                collection.update(update, temp, true, true);
+               
+                return Response.status(200).entity("success").build();
+
+
+	    } catch (Exception e) {
+	        return Response.status(503).entity("failed").build();
+	    }
+
+	}
+	
+	//Update an existing crop grown by user
+	@GET
+    @Path("update_usercrop/{username}/{name}/{quantity}/{date}/{comment}")
+    @Produces("application/json")
+    public Response updateusercrop(
+            @PathParam("name") String name,
+            @PathParam("username") String username,
+            @PathParam("quantity") String quantity,
+            @PathParam("date") String date,
+            @PathParam("comment") String comment) {
+
+        /*
+         * Adds a new crop entry to the database.
+         */
+        try {
+            DBCollection collection = db.getCollection("users");
+            
+            BasicDBObject change = new BasicDBObject();
+            change.put("username", username);
+            change.put("user_crops.crop_name", name);
+            BasicDBObject setDoc = new BasicDBObject();                 
+           
+            setDoc.append("user_crops.0.crop_expected_quantity", quantity);   
+            setDoc.append("user_crops.0.crop_harvest_date", date); 
+            setDoc.append("user_crops.0.comments", comment); 
+            
+            BasicDBObject account = new BasicDBObject("$set", setDoc);
+            collection.update(change, account);
+               
+                return Response.status(200).entity("success").build();
+
+            }
+         catch (Exception e) {
+            return Response.status(503).entity("failed").build();
+        }
+    }
+
+	
 
 	// Crops API===============================================
 
@@ -654,7 +804,7 @@ sq.put("crop_name",java.util.regex.Pattern.compile(crop_name));
     }
 
 
-@POST
+	@POST
     @Path("create_crop")
     @Produces("application/json")
     public Response addcrop(

@@ -71,11 +71,11 @@ public class Gardenshift {
 
 		try {
 
-			mongo = new Mongo("127.3.119.1", 27017);
-		//	mongo = new Mongo("localhost", 27017);
+		//	mongo = new Mongo("127.3.119.1", 27017);
+			mongo = new Mongo("localhost", 27017);
 			db = mongo.getDB("gardenshift");
 
-			db.authenticate("admin", "redhat".toCharArray());
+		//	db.authenticate("admin", "redhat".toCharArray());
 
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -735,22 +735,75 @@ public class Gardenshift {
         /*
          * Adds a new crop entry to the database.
          */
-        try {
+//        try {
+//            DBCollection collection = db.getCollection("users");
+//            
+//            BasicDBObject change = new BasicDBObject();
+//            change.put("username", username);
+//            change.put("user_crops.crop_name", name);
+//            BasicDBObject setDoc = new BasicDBObject();                 
+//           
+//            setDoc.append("user_crops.0.crop_expected_quantity", quantity);   
+//            setDoc.append("user_crops.0.crop_harvest_date", date); 
+//            setDoc.append("user_crops.0.comments", comment); 
+//            
+//            BasicDBObject account = new BasicDBObject("$set", setDoc);
+//            collection.update(change, account);
+//               
+//                return Response.status(200).entity("success").build();
+//
+//            }
+//         catch (Exception e) {
+//            return Response.status(503).entity("failed").build();
+//        }
+		
+		
+		try {
             DBCollection collection = db.getCollection("users");
-            
-            BasicDBObject change = new BasicDBObject();
-            change.put("username", username);
-            change.put("user_crops.crop_name", name);
-            BasicDBObject setDoc = new BasicDBObject();                 
-           
-            setDoc.append("user_crops.0.crop_expected_quantity", quantity);   
-            setDoc.append("user_crops.0.crop_harvest_date", date); 
-            setDoc.append("user_crops.0.comments", comment); 
-            
-            BasicDBObject account = new BasicDBObject("$set", setDoc);
-            collection.update(change, account);
-               
-                return Response.status(200).entity("success").build();
+
+            String URI = 
+"http://dev-gardenshift.rhcloud.com/Gardenshift/delete_usercrop/";
+            String URI1 = 
+"http://dev-gardenshift.rhcloud.com/Gardenshift/create_usercrop/";
+            String RESTCall ="";
+            String res ="";
+            String result="";
+            String RESTCall1 ="";
+            String res1 ="";
+            String result1="";
+            System.out.println("3");
+
+                     RESTCall = URI + username+"/"+name;
+
+                      URL url = new URL(RESTCall);
+
+                   URLConnection conn = url.openConnection();
+
+                   BufferedReader in = new BufferedReader(new
+                   InputStreamReader(conn.getInputStream()));
+
+                   while ((res = in.readLine()) != null) {
+
+                   result += res;
+                   }
+                   System.out.println("1");
+                   
+                 RESTCall1 = URI1 + 
+username+"/"+name+"/"+quantity+"/"+date+"/"+comment;
+
+                    URL url1 = new URL(RESTCall1);
+
+                 URLConnection conn1 = url1.openConnection();
+
+                 in = new BufferedReader(new
+                 InputStreamReader(conn1.getInputStream()));
+
+                 while ((res1 = in.readLine()) != null) {
+
+                 result1 += res1;
+                 }
+                 System.out.println("2");
+                 return Response.status(200).entity("success").build();
 
             }
          catch (Exception e) {

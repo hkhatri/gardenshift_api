@@ -15,6 +15,18 @@
  * Hilay Khatri				Update personal records 									06-11-2012
  * 
  * Hilay Khatri				Authenticate user											06-11-2012
+ * 
+ * Ramana Malladi			user crop search
+ * 
+ *  Ramana Malladi 			crop search
+ *  
+ *  Ramana Malladi			create crop				
+ *  
+ *  Ramana Malladi			update a crop			
+ *  
+ *  Ramana Malladi			delete a crop
+ *  
+ *  Ramana Malladi			crop_details_all
  *
  */
 
